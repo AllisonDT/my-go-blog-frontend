@@ -5,10 +5,14 @@ import Header from '../components/Header';
 export default function Home() {
   const canvasRef = useRef(null);
   const [gameOver, setGameOver] = useState(false);
-  // This state is optional if you need to display score outside the canvas,
-  // but the in-game drawing will use scoreRef
-  const [score, setScore] = useState(0);
+  // Remove unused score state and use a ref for the current score
   const scoreRef = useRef(0);
+
+  // Create a ref to always have the latest value of gameOver
+  const gameOverRef = useRef(gameOver);
+  useEffect(() => {
+    gameOverRef.current = gameOver;
+  }, [gameOver]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -43,12 +47,12 @@ export default function Home() {
 
     let obstacle = getRandomObstacle();
 
-    // Listen for Space or Up Arrow key to jump
+    // Listen for Space or Up Arrow key to jump, using gameOverRef
     const keyDownHandler = (e) => {
       if (
         (e.code === 'Space' || e.code === 'ArrowUp') &&
         !penguin.isJumping &&
-        !gameOver
+        !gameOverRef.current
       ) {
         penguin.dy = penguin.jumpStrength;
         penguin.isJumping = true;
@@ -60,13 +64,29 @@ export default function Home() {
     const drawPenguin = (ctx, x, y, width, height) => {
       // Draw body as a black ellipse
       ctx.beginPath();
-      ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(
+        x + width / 2,
+        y + height / 2,
+        width / 2,
+        height / 2,
+        0,
+        0,
+        Math.PI * 2
+      );
       ctx.fillStyle = 'black';
       ctx.fill();
 
       // Draw belly as a white ellipse
       ctx.beginPath();
-      ctx.ellipse(x + width / 2, y + height / 2 + height * 0.1, width / 3, height / 3, 0, 0, Math.PI * 2);
+      ctx.ellipse(
+        x + width / 2,
+        y + height / 2 + height * 0.1,
+        width / 3,
+        height / 3,
+        0,
+        0,
+        Math.PI * 2
+      );
       ctx.fillStyle = 'white';
       ctx.fill();
 
@@ -105,8 +125,7 @@ export default function Home() {
       obstacle.x -= obstacle.speed;
       if (obstacle.x + obstacle.width < 0) {
         obstacle = getRandomObstacle();
-        scoreRef.current += 1; // Update the mutable ref
-        setScore(scoreRef.current); // Optionally sync with state
+        scoreRef.current += 1; // Increment the score
       }
 
       // Draw ground
@@ -148,7 +167,7 @@ export default function Home() {
       document.removeEventListener('keydown', keyDownHandler);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, []); // empty dependency array so this effect runs only once on mount
 
   return (
     <div>
